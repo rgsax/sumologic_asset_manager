@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Rules</title>
+{% endblock %}
+
+{% block body %}
+<h1>Rules</h1>
+{% for tag, rules in instances.items %}
+<h2>{{tag}}</h2>
+<p id="{{tag}}">
+    <ol>
+    {% for rule in rules %}
+        <li>rule</li>
+    {% endfor %}
+    </ol>
+</p>
+{% endfor %}
+{% endblock %}

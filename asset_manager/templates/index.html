@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block head %}
+	<link rel="stylesheet" href="{% static 'json-viewer/jquery.json-viewer.css' %}" />
+{% endblock %}
+	
+{% block body %}
+<div class="container-fluid">
+	<div class="row p-3">
+		<ul class="nav nav-tabs" id="myTab" role="tablist">
+			<li class="nav-item" role="presentation">
+			<button class="nav-link active" id="rules-tab" data-bs-toggle="tab" data-bs-target="#rules-tab-pane" type="button" role="tab" aria-controls="rules-tab-pane" aria-selected="true">Rules</button>
+			</li>
+			<li class="nav-item" role="presentation">
+			<button class="nav-link" id="rule-tuning-expressions-tab" data-bs-toggle="tab" data-bs-target="#rule-tuning-expressions-tab-pane" type="button" role="tab" aria-controls="rule-tuning-expressions-tab-pane" aria-selected="false">Tuning Expressions</button>
+			</li>
+			<li class="nav-item" role="presentation">
+			<button class="nav-link" id="match-lists-tab" data-bs-toggle="tab" data-bs-target="#match-lists-tab-pane" type="button" role="tab" aria-controls="match-lists-tab-pane" aria-selected="false">Match Lists</button>
+			</li>
+			<li class="nav-item" role="presentation">
+			<button class="nav-link" id="custom-insights-tab" data-bs-toggle="tab" data-bs-target="#custom-insights-tab-pane" type="button" role="tab" aria-controls="custom-insights-tab-pane" aria-selected="false">Custom Insitghts</button>
+			</li>
+		</ul>
+	</div>
+
+	<div class="tab-content" id="myTabContent">
+		<div class="tab-pane fade show active" id="rules-tab-pane" role="tabpanel" aria-labelledby="rules-tab" tabindex="0"></div>
+		<div class="tab-pane fade" id="rule-tuning-expressions-tab-pane" role="tabpanel" aria-labelledby="rule-tuning-expressions-tab" tabindex="0"></div>
+		<div class="tab-pane fade" id="match-lists-tab-pane" role="tabpanel" aria-labelledby="match-lists-tab" tabindex="0"></div>
+		<div class="tab-pane fade" id="custom-insights-tab-pane" role="tabpanel" aria-labelledby="custom-insights-lists-tab" tabindex="0"></div>
+	</div>
+</div>
+
+<div class="modal fade" id="asset-modal" tabindex="-1" aria-labelledby="asset-modal" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="modal-title"></h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body" id="modal-content">
+				<div id="json-viewer" class="font-monospace fs-6"></div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script>
+	var json_viewer;
+
+	function populate_asset(asset_type) {
+		const make_assets_list = (at) => $(`<div class="list-group" id="${at}-tuning-expressions-list"></div>`);
+
+		let path = "{% url 'asset_manager:assets' '_' %}".replace("_", asset_type);
+		let assets = {};
+
+		let loading_pane = make_assets_list(asset_type);
+		loading_pane.append(`<button class="list-group-item list-group-item-secondary" type="button">
+	<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading
+</button>`);
+
+		let assets_tab = $(`#${asset_type}-tab-pane`);
+		assets_tab.empty();
+		let row_div = $('<div class="row row-cols-4"></div>');
+		assets_tab.append(row_div);
+		
+		row_div.append(loading_pane);
+		
+
+		$.ajax({
+			method: "GET",
+			url: path,
+			success: response => {
+				row_div.empty();
+				for(instance in response) {
+					let assets_list = make_assets_list(asset_type);
+					let instance_card = $("<div class=\"card\"></div>");
+					instance_card.append($(`<h5 class="card-header">${instance} <span class="badge bg-primary">${response[instance].length}</span><h5>`));
+					let card_body = $("<div class=\"card-body\"></div>");
+					card_body.append(assets_list);
+					instance_card.append(card_body);
+					let col_div = $('<div class="col"></div>');
+					col_div.append(instance_card);
+					row_div.append(col_div);
+					
+
+					for(let asset of response[instance]) {
+						let asset_btn = $(`<button type="button" class="list-group-item list-group-item-action">${asset.name}</button>`);
+						asset_btn.on("click", event => {
+							json_viewer.jsonViewer(asset, {
+								rootCollapsable: false, 
+								collapsed: true
+							});
+							
+							$("#modal-title").text(asset.name);
+							let modal = new bootstrap.Modal("#asset-modal");
+							modal.show();
+						});
+						assets_list.append(asset_btn);
+					}
+				}
+			}
+		});
+	}
+
+	function init_assets() {
+		let assets = ["rules", "rule-tuning-expressions", "match-lists", "custom-insights"];
+
+		for(let asset of assets) {
+			populate_asset(asset);
+		}
+	}
+
+	$(document).ready(() => {
+		json_viewer = $("#json-viewer");
+		init_assets();	
+		
+		$(".asset-btn").on("click", event => {
+			let modal = new bootstrap.Modal("#asset-modal");
+			modal.show();
+		});
+
+		
+	});
+</script>
+{% endblock %}

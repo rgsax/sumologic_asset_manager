@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block head %}
+<title>Instance Management</title>
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="row p-3">
+        <div class="col-3">
+            <h3>Create Instance</h3>
+            <form action="{% url 'asset_manager:create_instance' %}" method="post">
+                <div class="mb-3">
+                    <label for="instance-tag" class="form-label">Tag</label>
+                    <input type="text" id="instance-tag" name="tag" class="form-control" required />
+                </div>
+                <div class="mb-3">
+                    <label for="instance-url" class="form-label">URL</label>
+                    <input type="text" id="instance-url" name="url" class="form-control" required />
+                </div>
+                <div class="mb-3">
+                    <label for="instance-key" class="form-label">Access Key</label>
+                    <input type="password" id="instance-key" name="key" class="form-control" placeholder="Access Key" required />
+                </div>
+                <button type="submit" class="btn btn-primary mb-3">Submit</button>
+            </form>
+        </div>
+    </div>
+    <hr>
+    <div class="row -p3">
+        <div class="col-3">
+            <h3>Instances</h3>
+            <div class="list-group" id="instances">
+            {% for instance in instances %}
+                <button type="button" class="list-group-item list-group-item-action">{{instance.tag}}</button>
+            {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="instance-modal" tabindex="-1" aria-labelledby="instance-modal" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="modal-title"></h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body" id="modal-content">
+                <form>
+                    <div class="mb-3">
+                        <label for="modal-instance-tag" class="form-label">Tag</label>
+                        <input type="text" id="modal-instance-tag" name="tag" class="form-control" required disabled/>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal-instance-url" class="form-label">URL</label>
+                        <input type="text" id="modal-instance-url" name="url" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal-instance-key" class="form-label">Access Key</label>
+                        <input type="password" id="modal-instance-key" name="key" class="form-control" placeholder="Access Key" required />
+                    </div>
+                </form>            
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="modal-update" data-bs-dismiss="modal">Update</button>
+                <button type="button" class="btn btn-danger" id="modal-delete" data-bs-dismiss="modal">Delete</button>
+            </div>
+		</div>
+	</div>
+</div>
+
+<script>
+
+$(document).ready(() => {
+    $.ajax({
+        method: "GET",
+        url: "{% url 'asset_manager:assets' %}",
+        success: (response) => {
+            let instances_list = $("#instances");
+            for(let instance of response["instances"]) {
+                let instance_btn = $(`<button type="button" class="list-group-item list-group-item-action">${instance.tag}</button>`);
+                
+                instance_btn.on("click", event => {
+							$("#modal-title").text(instance.tag);
+                            $("#modal-instance-tag").val(instance.tag);
+                            $("#modal-instance-url").val(instance.url);
+                            $("#modal-instance-key").val("Instance Key");
+
+                            $("#modal-update").on("click", (event) => {
+                                event.preventDefault();
+                                $.ajax({
+                                    method: "POST",
+                                    url: "{% url 'asset_manager:manage' %}",
+                                    data: {
+                                        tag: $("#modal-instance-tag").val(), 
+                                        url: $("#modal-instance-url").val(),
+                                        key: $("#modal-instance-key").val()
+                                    },
+                                    dataType: "application/x-www-form-urlencoded",
+                                    complete: () => { location.reload(); }
+                                });
+                            });
+
+                            $("#modal-delete").on("click", (event) => {
+                                event.preventDefault();
+                                $.ajax({
+                                    method: "POST",
+                                    url: "{% url 'asset_manager:delete_asset' '_' %}".replace('_', instance.tag),
+                                    complete: () => { location.reload(); }
+                                });                                   
+                            });
+
+							let modal = new bootstrap.Modal("#instance-modal");
+							modal.show();
+						});
+                
+                instances_list.append(instance_btn);
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
