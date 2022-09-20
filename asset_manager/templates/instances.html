@@ -89,14 +89,19 @@ $(document).ready(() => {
 
                             $("#modal-update").on("click", (event) => {
                                 event.preventDefault();
+                                let form_data = {
+                                    tag: $("#modal-instance-tag").val(), 
+                                    url: $("#modal-instance-url").val()
+                                };
+                                let access_key = $("#modal-instance-key").val();
+                                if(access_key !== "Instance Key") {
+                                    form_data.key = access_key;
+                                }
+
                                 $.ajax({
                                     method: "POST",
                                     url: "{% url 'asset_manager:manage' %}",
-                                    data: {
-                                        tag: $("#modal-instance-tag").val(), 
-                                        url: $("#modal-instance-url").val(),
-                                        key: $("#modal-instance-key").val()
-                                    },
+                                    data: form_data,
                                     dataType: "application/x-www-form-urlencoded",
                                     complete: () => { location.reload(); }
                                 });

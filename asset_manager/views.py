@@ -1,6 +1,7 @@
 from ast import Delete
 from django.shortcuts import render, redirect
 from django.views import View
+from django.urls import reverse
 from django.http import HttpResponseNotFound, JsonResponse
 
 from .sumo import verify_asset, get_assets
@@ -35,7 +36,8 @@ class InstanceView(View):
             form_data = request.POST
             instance = SumoInstance.objects.get(tag=form_data['tag'])
             instance.url = form_data['url']
-            instance.key = form_data['key']
+            if 'key' in form_data:
+                instance.key = form_data['key']
             instance.save()
 
         return JsonResponse({"status": "Success"})
@@ -53,7 +55,7 @@ def create_instance(request):
         instance = SumoInstance(tag=tag, url=url, key=key)
         instance.save()
 
-        return redirect("/manage/instance")
+    return redirect(reverse("asset_manager:manage"))
 
 def get_instances(request):
         instances = list(map(lambda i: {'tag': i.tag, 'url': i.url}, SumoInstance.objects.all()))
